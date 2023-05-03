@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@pixi/assets": "^7.2.4",
+    "easystarjs": "^0.4.4",
     "pixi.js": "7.2.4"
   },
   "devDependencies": {
