@@ -40,7 +40,6 @@ app.stage.on("pointerdown", (e) => {
 		// Use shift because the first element of the array is the character position and i don't need it
 		path.shift()
 		character.changePath(path)
-		console.log(path);
 
 		map.drawTrace(path)
 	})

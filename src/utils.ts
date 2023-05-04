@@ -13,3 +13,8 @@ export function pixelsToGrid(xPosition: number, yPosition: number): IPointData {
     const yCoordinate = Math.floor(yPosition / 32);
     return { x: xCoordinate, y: yCoordinate };
 }
+
+export function clampToTheGrid(pos: IPointData): IPointData {
+    const pixelPos = pixelsToGrid(pos.x, pos.y)
+    return gridToPixels(pixelPos.x, pixelPos.y)
+}

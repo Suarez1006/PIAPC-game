@@ -1,5 +1,5 @@
 import { Container, Graphics, IPointData } from "pixi.js";
-import { gridToPixels, pixelsToGrid } from "./utils";
+import { clampToTheGrid, gridToPixels, pixelsToGrid } from "./utils";
 
 type charState = "idle" | "walking" | "running"
 export class Character extends Container {
@@ -34,16 +34,13 @@ export class Character extends Container {
         this.state = "walking"
     }
 
-    protected linearMovement(): void {
-        // this.position.add(this.velocity, this.position);
-    }
-
     public followPath(dt: number): void {
         if (this.pathToFollow == null) {
             return
         }
         let desiredPos = this.pathToFollow[this.pathIndex]
-        let desiredGlobalPos = gridToPixels(desiredPos.x, desiredPos.y)
+        let desiredGlobalPos = clampToTheGrid(gridToPixels(desiredPos.x, desiredPos.y))
+
         if (this.gridPos.x == desiredPos.x && this.gridPos.y == desiredPos.y && this.pathIndex < this.pathToFollow.length - 1) {
             this.pathIndex++
         }
@@ -58,11 +55,12 @@ export class Character extends Container {
         }
 
         const distance = this.getDirection(this.pathToFollow[this.pathIndex])
-        console.log(distance, this.rotateChar(distance));
 
         this.angle = this.rotateChar(distance)
+
         this.position.x += distance.x * dt
         this.position.y += distance.y * dt
+
 
         const gridPosition = pixelsToGrid(this.position.x, this.position.y)
         this.gridPos.x = gridPosition.x
@@ -93,34 +91,22 @@ export class Character extends Container {
                 return 225
             }
         }
-
-        // switch (distance) {
-        //     case { x: 1, y: 0 }: return 0
-        //         break
-        //     case { x: 1, y: 1 }: return 45
-        //         break
-        //     case { x: 0, y: 1 }: return 90
-        //         break
-        //     case { x: -1, y: 1 }: return 135
-        //         break
-        //     case { x: -1, y: 0 }: return 180
-        //         break
-        //     case { x: -1, y: -1 }: return 225
-        //         break
-        //     case { x: 0, y: -1 }: return 270
-        //         break
-        //     case { x: 1, y: -1 }: return 315
-        //         break
-        //     default: return 90
-        //         break
-        // }
     }
 
     private getDirection(desiredPos: IPointData): IPointData {
         const globalPos = gridToPixels(desiredPos.x, desiredPos.y)
-        return {
-            x: this.position.x < globalPos.x ? 1 : -1, y: this.position.y < globalPos.y ? 1 : -1
+        let rv: IPointData = { x: 0, y: 0 }
+        if (this.position.x > globalPos.x + 1) {
+            rv.x = -1
+        } else if (this.position.x < globalPos.x - 1) {
+            rv.x = 1
         }
+        if (this.position.y > globalPos.y + 1) {
+            rv.y = -1
+        } else if (this.position.y < globalPos.y - 1) {
+            rv.y = 1
+        }
+        return rv
     }
 
     private calculateDistance(a: IPointData, b: IPointData): number {
