@@ -2,8 +2,8 @@ import { IPointData } from "pixi.js";
 
 /**  This function converts grid coordinates to screen pixels */
 export function gridToPixels(xCoordinate: number, yCoordinate: number): IPointData {
-    const xPosition = (xCoordinate) * (32) + 16;
-    const yPosition = (yCoordinate) * (32) + 16;
+    const xPosition = xCoordinate * 32 + 16;
+    const yPosition = yCoordinate * 32 + 16;
     return { x: xPosition, y: yPosition };
 }
 

@@ -1,4 +1,4 @@
-import { Application, Graphics } from 'pixi.js'
+import { Application, Graphics, IPointData } from 'pixi.js'
 import { Character } from './character';
 import { TileMap } from './map';
 import { pixelsToGrid } from './utils';
@@ -12,28 +12,38 @@ const app = new Application({
 	height: 768
 });
 
+
 const background = new Graphics().beginFill(0x9E9E9E).drawRect(0, 0, 1280, 768).endFill()
 app.stage.addChild(background)
 
 const map: TileMap = new TileMap()
 app.stage.addChild(map)
 
-var easystarjs = require("easystarjs")
-var easystar = new easystarjs.js();
-easystar.setGrid(map.getTilesMatrix())
-easystar.setAcceptableTiles([0]);
+var easyStarJs = require("easystarjs")
+var easyStar = new easyStarJs.js();
+easyStar.setGrid(map.getTilesMatrix())
+easyStar.setAcceptableTiles([0]);
 
 const character: Character = new Character()
 app.stage.addChild(character)
+app.ticker.add((dt) => character.update(dt))
 
 app.stage.interactive = true
 app.stage.on("pointerdown", (e) => {
 	const gridPosition = pixelsToGrid(e.global.x, e.global.y)
 	// console.log("clicked pos", gridPosition);
 
-	easystar.findPath(character.gridPos.x, character.gridPos.y, gridPosition.x, gridPosition.y, (path: any) => {
+	easyStar.findPath(character.gridPos.x, character.gridPos.y, gridPosition.x, gridPosition.y, (path: Array<IPointData>) => {
+		if (path == undefined) {
+			return
+		}
+		// Use shift because the first element of the array is the character position and i don't need it
+		path.shift()
+		character.changePath(path)
 		console.log(path);
+
+		map.drawTrace(path)
 	})
-	easystar.calculate()
+	easyStar.calculate()
 })
 

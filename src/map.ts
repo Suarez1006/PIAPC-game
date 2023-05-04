@@ -1,12 +1,16 @@
 import { Container, Graphics, IPointData } from "pixi.js"
 import mapData from "../static/PIAPC.json"
+import { gridToPixels } from "./utils"
 
 export type floorTile = {
     walkable: boolean
     visual?: Graphics
 }
 export class TileMap extends Container {
+    private pathTiles: Array<Graphics> = []
+    private lastDestinyPos: IPointData = { x: 0, y: 0 }
     private tilesQuantity: IPointData = { x: mapData.width, y: mapData.height }
+
     constructor() {
         super()
         this.eventMode = "static"
@@ -42,5 +46,26 @@ export class TileMap extends Container {
             }
         }
         return rv
+    }
+
+    public drawTrace(pathArray: Array<IPointData>): void {
+        if (pathArray != undefined && this.pathTiles.length > 1 && pathArray[pathArray.length - 1].x == this.lastDestinyPos.x && pathArray[pathArray.length - 1].y == this.lastDestinyPos.y) {
+            console.log("same");
+        }
+
+        while (this.pathTiles.length > 0) {
+            this.pathTiles[0].destroy()
+            this.pathTiles.splice(0, 1)
+        }
+
+        for (const pathTile of pathArray) {
+            const traceGraph = new Graphics().beginFill(0xffffff, 0.3).drawRect(-7, -7, 14, 14)
+            const posInPixels = gridToPixels(pathTile.x, pathTile.y)
+            traceGraph.position.set(posInPixels.x, posInPixels.y)
+            this.addChild(traceGraph)
+            this.pathTiles.push(traceGraph)
+        }
+        const lastTilePos = pathArray[pathArray.length - 1]
+        this.lastDestinyPos = { x: lastTilePos.x, y: lastTilePos.y }
     }
 }
