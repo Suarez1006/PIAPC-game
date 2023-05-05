@@ -1,16 +1,20 @@
-import { Container, Graphics, IPointData } from "pixi.js";
-import { clampToTheGrid, gridToPixels, pixelsToGrid } from "./utils";
+import { Container, Graphics, IPointData, Point, utils } from "pixi.js";
+import { calculateDistance, clampToTheGrid, gridToPixels, pixelsToGrid } from "./utils";
 
 type charState = "idle" | "walking" | "running"
 export class Character extends Container {
+    private eventEmitter: utils.EventEmitter
     public state: charState = "idle"
 
-    public gridPos = { x: 6, y: 5 }
-    private maxVelocity: number = 0.3
+    public gridPos = { x: 5, y: 4 }
+    private maxVelocity: number = 2
+    private velocity: Point
     private pathToFollow: IPointData[] = [];
     private pathIndex: number = 0;
-    constructor() {
+    constructor(eventEmitter: utils.EventEmitter) {
         super()
+        this.eventEmitter = eventEmitter
+        this.velocity = new Point(0, 0)
 
         const visual: Graphics = new Graphics().beginFill(0x24c7e1).drawCircle(0, 0, 12);
         const raycast: Graphics = new Graphics().beginFill(0xff0000).drawRect(0, -1, 19, 2);
@@ -21,11 +25,11 @@ export class Character extends Container {
         this.position.set(globalPos.x, globalPos.y)
     }
 
-    public update(dt: number): void {
+    public update(_dt: number): void {
         if (this.state == "idle") {
             return
         }
-        this.followPath(dt)
+        this.followPath()
     }
 
     public changePath(path: Array<IPointData>): void {
@@ -34,32 +38,38 @@ export class Character extends Container {
         this.state = "walking"
     }
 
-    public followPath(dt: number): void {
+    private followPath(): void {
         if (this.pathToFollow == null) {
             return
         }
         let desiredPos = this.pathToFollow[this.pathIndex]
-        let desiredGlobalPos = clampToTheGrid(gridToPixels(desiredPos.x, desiredPos.y))
 
         if (this.gridPos.x == desiredPos.x && this.gridPos.y == desiredPos.y && this.pathIndex < this.pathToFollow.length - 1) {
+            this.eventEmitter.emit("reachedTile")
             this.pathIndex++
         }
-        if (this.calculateDistance(this.position, desiredGlobalPos) <= this.maxVelocity) {
-            console.log("parar");
+        desiredPos = this.pathToFollow[this.pathIndex]
+        let desiredGlobalPos = clampToTheGrid(gridToPixels(desiredPos.x, desiredPos.y))
 
+
+        const xDistance = desiredGlobalPos.x - this.position.x
+        const yDistance = desiredGlobalPos.y - this.position.y
+        const totalDistance = calculateDistance(this.position, desiredGlobalPos)
+        if (totalDistance <= this.maxVelocity) {
             this.pathIndex = 0;
             this.state = "idle"
+            this.eventEmitter.emit("stop")
             return
-
-            // this.state = "walking"
         }
+        this.velocity.x = xDistance / totalDistance
+        this.velocity.y = yDistance / totalDistance
 
-        const distance = this.getDirection(this.pathToFollow[this.pathIndex])
+        const direction = this.getDirection(this.pathToFollow[this.pathIndex])
 
-        this.angle = this.rotateChar(distance)
+        this.angle = this.rotateChar(direction)
 
-        this.position.x += distance.x * dt
-        this.position.y += distance.y * dt
+        this.position.x += this.velocity.x * this.maxVelocity
+        this.position.y += this.velocity.y * this.maxVelocity
 
 
         const gridPosition = pixelsToGrid(this.position.x, this.position.y)
@@ -108,10 +118,5 @@ export class Character extends Container {
         }
         return rv
     }
-
-    private calculateDistance(a: IPointData, b: IPointData): number {
-        return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
-    }
-
 
 }

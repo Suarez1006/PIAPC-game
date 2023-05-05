@@ -1,4 +1,4 @@
-import { Container, Graphics, IPointData } from "pixi.js"
+import { Container, Graphics, IPointData, utils } from "pixi.js"
 import mapData from "../static/PIAPC.json"
 import { gridToPixels } from "./utils"
 
@@ -7,12 +7,15 @@ export type floorTile = {
     visual?: Graphics
 }
 export class TileMap extends Container {
+    private eventEmitter: utils.EventEmitter
+
     private pathTiles: Array<Graphics> = []
     private lastDestinyPos: IPointData = { x: 0, y: 0 }
     private tilesQuantity: IPointData = { x: mapData.width, y: mapData.height }
 
-    constructor() {
+    constructor(eventEmitter: utils.EventEmitter) {
         super()
+        this.eventEmitter = eventEmitter
         this.eventMode = "static"
         const tilesData: Array<number> = mapData.layers[0].data
         const tileSize: number = 32
@@ -33,7 +36,11 @@ export class TileMap extends Container {
             }
         }
 
-
+        this.eventEmitter.on("stop", () => this.cleanTrace())
+        this.eventEmitter.on("reachedTile", () => {
+            this.pathTiles[0].destroy()
+            this.pathTiles.shift()
+        })
     }
 
     public getTilesMatrix(): Array<Array<number>> {
@@ -67,5 +74,15 @@ export class TileMap extends Container {
         }
         const lastTilePos = pathArray[pathArray.length - 1]
         this.lastDestinyPos = { x: lastTilePos.x, y: lastTilePos.y }
+    }
+
+    public cleanTrace(): void {
+        if (this.pathTiles.length <= 0) {
+            return
+        }
+        while (this.pathTiles.length > 0) {
+            this.pathTiles[0].destroy()
+            this.pathTiles.splice(0, 1)
+        }
     }
 }
